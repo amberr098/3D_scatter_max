@@ -2,6 +2,7 @@ library(shiny)
 library(xlsx)
 library(shinythemes)
 library(shinyWidgets)
+library(plotly)
 
 ui <- fluidPage(
   theme = shinytheme("cosmo"),
@@ -19,16 +20,20 @@ ui <- fluidPage(
                
                div(style = "margin-top: 40px;",
                  fluidRow(
-                   column(4, pickerInput(inputId = "molecule1", label = "Select molecule", choices = c(), multiple = FALSE))
+                   column(4, uiOutput(outputId = "Cmolecule1")),
+                   column(2, uiOutput(outputId = "Cadd1"))
                  ),
                  fluidRow(
-                   column(4, pickerInput(inputId = "molecule2", label = "Select molecule", choices = c(), multiple = FALSE))
+                   column(4, uiOutput(outputId = "Cmolecule2")),
+                   column(2, uiOutput(outputId = "Cadd2"))
                  ),
                  fluidRow(
-                   column(4, pickerInput(inputId = "molecule3", label = "Select molecule", choices = c(), multiple = FALSE)),
-                   div(style = "margin-top: 25px;",
-                       column(4, actionButton("plot", "Plot"))
-                   )
+                   column(4, uiOutput(outputId = "Cmolecule3")),
+                   column(2, uiOutput(outputId = "Cadd3"))
+                 ),
+                 
+                 fluidRow(
+                   column(4, uiOutput(outputId = "plotB"))
                  )
                )
              )
@@ -72,52 +77,75 @@ server <- function(input, output, session) {
           invisible("geen keuze")
         }
       }
+      ch <<- molChoose
       
-      updatePickerInput(session, "molecule1",
-                        label = "Select molecule",
-                        choices = c(molChoose))
+      output$Cmolecule1 <- renderUI({
+        selectInput(inputId = "molecule1", label = "Select molecule", choices = c(ch))
+      })
       
-      updatePickerInput(session, "molecule2",
-                        label = "Select molecule",
-                        choices = c(molChoose))
+      output$Cadd1 <- renderUI({
+        actionButton(inputId = "Add1", label = NULL, icon = icon("plus"))
+      })
       
-      updatePickerInput(session, "molecule3",
-                        label = "Select molecule",
-                        choices = c(molChoose))
+      output$plotB <- renderUI({
+        actionButton(inputId = "plot", label = "Plot")
+      })
     }
     
   })
-  
-  observeEvent(input$plot, {
-    source("visualize.R")
-    values_good1 <- getSelectedMol(input$molecule1, norm_data)
-    values_good2 <- getSelectedMol(input$molecule2, norm_data)
-    values_good3 <- getSelectedMol(input$molecule3, norm_data)
-    
-    alignDataFrame1 <- getPlotData(values_good1, dataplusmin)
-    alignDataFrame2 <- getPlotData(values_good2, dataplusmin)
-    alignDataFrame3 <- getPlotData(values_good3, dataplusmin)
-    
-    p1 <- setPlot(alignDataFrame1)
-    p2 <- setPlot(alignDataFrame2)
-    p3 <- setPlot(alignDataFrame3)
-    
-    updateTabsetPanel(session, "tabs", selected = "Visualisation")
-    
-    output$Graphic1 <- renderPlotly({
-      p1
+  observeEvent(input$Add1, {
+    output$Cmolecule2 <- renderUI({
+      selectInput(inputId = "molecule2", label = "Select molecule", choices = c(ch))
     })
     
-    output$Graphic2 <- renderPlotly({
-      p2
+    output$Cadd2 <- renderUI({
+      actionButton(inputId = "Add2", label = NULL, icon = icon("plus"))
     })
     
-    output$Graphic3 <- renderPlotly({
-      p3
+    observeEvent(input$Add2, {
+      output$Cmolecule3 <- renderUI({
+        selectInput(inputId = "molecule3", label = "Select molecule", choices = c(ch))
+      })
     })
   })
   
-  
+
+  observeEvent(input$plot, {
+      if(!is.null(input$molecule1)){
+        source("visualize.R")
+        values_good1 <- getSelectedMol(input$molecule1, norm_data)
+        alignDataFrame1 <- getPlotData(values_good1, dataplusmin)
+        p1 <- setPlot(alignDataFrame1, input$molecule1)
+
+        output$Graphic1 <- renderPlotly({
+          p1
+        })
+      }
+
+      if(!is.null(input$molecule2)){
+        source("visualize.R")
+        values_good2 <- getSelectedMol(input$molecule2, norm_data)
+        alignDataFrame2 <- getPlotData(values_good2, dataplusmin)
+        p2 <- setPlot(alignDataFrame2, input$molecule2)
+
+        output$Graphic2 <- renderPlotly({
+          p2
+        })
+      }
+
+      if(!is.null(input$molecule3)){
+        source("visualize.R")
+        values_good3 <- getSelectedMol(input$molecule3, norm_data)
+        alignDataFrame3 <- getPlotData(values_good3, dataplusmin)
+        p3 <- setPlot(alignDataFrame3, input$molecule3)
+
+        output$Graphic3 <- renderPlotly({
+          p3
+        })
+      }
+    
+    updateTabsetPanel(session, "tabs", selected = "Visualisation")
+  })
   }
 
 shinyApp(ui = ui, server = server)
