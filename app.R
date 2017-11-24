@@ -17,18 +17,31 @@ ui <- fluidPage(
                  )
                ),
                
-               fluidRow(
-                 column(4, pickerInput(inputId = "molecule", label = "Select molecule", choices = c(), multiple = FALSE)),
-                 div(style = "margin-top: 25px;",
-                  column(4, actionButton("plot", "Plot"))
+               div(style = "margin-top: 40px;",
+                 fluidRow(
+                   column(4, pickerInput(inputId = "molecule1", label = "Select molecule", choices = c(), multiple = FALSE))
+                 ),
+                 fluidRow(
+                   column(4, pickerInput(inputId = "molecule2", label = "Select molecule", choices = c(), multiple = FALSE))
+                 ),
+                 fluidRow(
+                   column(4, pickerInput(inputId = "molecule3", label = "Select molecule", choices = c(), multiple = FALSE)),
+                   div(style = "margin-top: 25px;",
+                       column(4, actionButton("plot", "Plot"))
+                   )
                  )
                )
              )
     ),
     
     tabPanel("Visualisation", icon = icon("bar-chart-o"),
-             div(style = "margin-top: 40px; margin-left: 20%;",
-              plotlyOutput(outputId = "Graphic", width = "800px", height = "600px"))
+             div(style = "margin-top: 11%; ",
+                 fluidRow(
+                   column(4, plotlyOutput(outputId = "Graphic1", width = "450px", height = "350px")),
+                   column(4, plotlyOutput(outputId = "Graphic2", width = "450px", height = "350px")),
+                   column(4, plotlyOutput(outputId = "Graphic3", width = "450px", height = "350px"))
+                 )
+              )
              )
   )
 )
@@ -60,7 +73,15 @@ server <- function(input, output, session) {
         }
       }
       
-      updatePickerInput(session, "molecule",
+      updatePickerInput(session, "molecule1",
+                        label = "Select molecule",
+                        choices = c(molChoose))
+      
+      updatePickerInput(session, "molecule2",
+                        label = "Select molecule",
+                        choices = c(molChoose))
+      
+      updatePickerInput(session, "molecule3",
                         label = "Select molecule",
                         choices = c(molChoose))
     }
@@ -69,13 +90,30 @@ server <- function(input, output, session) {
   
   observeEvent(input$plot, {
     source("visualize.R")
-    values_good <- getSelectedMol(input$molecule, norm_data)
-    alignDataFrame <- getPlotData(values_good, dataplusmin)
-    p <- setPlot(alignDataFrame)
+    values_good1 <- getSelectedMol(input$molecule1, norm_data)
+    values_good2 <- getSelectedMol(input$molecule2, norm_data)
+    values_good3 <- getSelectedMol(input$molecule3, norm_data)
+    
+    alignDataFrame1 <- getPlotData(values_good1, dataplusmin)
+    alignDataFrame2 <- getPlotData(values_good2, dataplusmin)
+    alignDataFrame3 <- getPlotData(values_good3, dataplusmin)
+    
+    p1 <- setPlot(alignDataFrame1)
+    p2 <- setPlot(alignDataFrame2)
+    p3 <- setPlot(alignDataFrame3)
+    
     updateTabsetPanel(session, "tabs", selected = "Visualisation")
     
-    output$Graphic <- renderPlotly({
-      p
+    output$Graphic1 <- renderPlotly({
+      p1
+    })
+    
+    output$Graphic2 <- renderPlotly({
+      p2
+    })
+    
+    output$Graphic3 <- renderPlotly({
+      p3
     })
   })
   
@@ -83,4 +121,3 @@ server <- function(input, output, session) {
   }
 
 shinyApp(ui = ui, server = server)
-
