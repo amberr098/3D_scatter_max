@@ -70,7 +70,7 @@ getPlotData <- function(values_good, dataPlusMin){
 
 setPlot <- function(alignDataFrame, mainTitle){
   p <- plot_ly(data = alignDataFrame, x=alignDataFrame$Glucose, y=alignDataFrame$Galactose, z=alignDataFrame$Glutamine,
-               mode = "markers", type = 'scatter3d', marker = list(color = alignDataFrame$Values, colorscale = "Viridis", showscale = TRUE)) %>%
+               mode = "markers", type = 'scatter3d', marker = list(color = alignDataFrame$Values, colorscale = "RdYlGn", showscale = TRUE)) %>%
     layout(scene = list(xaxis = list(title = 'Glucose'),
                         yaxis = list(title = 'Galactose'),
                         zaxis = list(title = 'Glutamine')),

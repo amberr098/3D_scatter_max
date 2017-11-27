@@ -40,13 +40,25 @@ ui <- fluidPage(
     ),
     
     tabPanel("Visualisation", icon = icon("bar-chart-o"),
-             div(style = "margin-top: 11%; ",
-                 fluidRow(
-                   column(4, plotlyOutput(outputId = "Graphic1", width = "450px", height = "350px")),
-                   column(4, plotlyOutput(outputId = "Graphic2", width = "450px", height = "350px")),
-                   column(4, plotlyOutput(outputId = "Graphic3", width = "450px", height = "350px"))
-                 )
-              )
+             
+             tabsetPanel(id = "visPanel",type = "tabs",
+                         
+               tabPanel("Graphic",
+                        div(style = "margin-top: 11%; ",
+                            fluidRow(
+                              column(4, plotlyOutput(outputId = "Graphic1", width = "450px", height = "350px")),
+                              column(4, plotlyOutput(outputId = "Graphic2", width = "450px", height = "350px")),
+                              column(4, plotlyOutput(outputId = "Graphic3", width = "450px", height = "350px"))
+                            )
+                          )
+                        ),
+               
+               tabPanel("Heatmap",
+                        plotlyOutput(outputId = "heatmap")
+                        
+                        
+               )
+             )
              )
   )
 )
@@ -144,8 +156,22 @@ server <- function(input, output, session) {
         })
       }
     
+    output$heatmapButton <- renderUI({
+      actionButton(inputId = "actHeatmapB",
+                   label = "Show heatmap")
+    })
+    
     updateTabsetPanel(session, "tabs", selected = "Visualisation")
   })
+  
+
+  source("heatmap.R")
+  hm <- setHeatmap(norm_data)
+    
+  output$heatmap <- renderPlotly({
+    hm
+  })
+  
   }
 
 shinyApp(ui = ui, server = server)
