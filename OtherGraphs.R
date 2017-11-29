@@ -1,3 +1,9 @@
+# In dit bestand worden de coordinaten voor de plot: UDP-glc / UDP-glcA
+# UDP-glc / UDP-xylose en UDP-glcA / UDP-xylose. 
+
+# Coordinaten van de punten aan de hand van +, - of 0 bepaald en in een tabel
+# gezet met daarbij ook de waarde van de coordinaat. Zowel de waarde van molecule 1
+# als de waarde van molecule 2. 
 getCoordinates <- function(norm_data, mol1, mol2, dataPlusMin){
   mol1Col <- which(colnames(norm_data) == mol1, arr.ind = TRUE)
   mol2Col <- which(colnames(norm_data) == mol2, arr.ind = TRUE)
@@ -61,6 +67,8 @@ getCoordinates <- function(norm_data, mol1, mol2, dataPlusMin){
   return(coordinates_duplicated)
 }
 
+# Hierbij word het gemiddelde genomen van de duplicates zodat er niet 2 punten 
+# dezelfde coordinaten hebben. Dit gebeurdt ook voor beide moleculen
 getAveragesDuplicates <- function(coordinates_duplicated){
   temp_matrix <- matrix(data = NA, nrow = nrow(coordinates_duplicated)/2, ncol = ncol(coordinates_duplicated))
   count <- 0 
@@ -87,6 +95,8 @@ getAveragesDuplicates <- function(coordinates_duplicated){
   return(averageDuplicates_dataframe)
 }
 
+# Hier wordt de waarde bepaald van mol1 / mol2. Deze waarde wordt naast de 
+# coordinaten in de tabel opgeslagen.
 getAllDuplicates <- function(data_noDupl){
   coordinates_m <- matrix(NA, nrow = nrow(data_noDupl), ncol = 4)
   
@@ -103,6 +113,7 @@ getAllDuplicates <- function(data_noDupl){
   return(coordinates_df)
 }
 
+# Het maken van de plot.
 setPlot<- function(coordinates_df, mainTitle){
   p <- plot_ly(data = coordinates_df, x=coordinates_df$Glucose, y=coordinates_df$Galactose, z=coordinates_df$Glutamine,
                mode = "markers", type = 'scatter3d', marker = list(color = coordinates_df$Values, colorscale = "RdYlGn", showscale = TRUE)) %>%

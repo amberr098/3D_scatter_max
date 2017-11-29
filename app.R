@@ -4,83 +4,21 @@ library(shinythemes)
 library(shinyWidgets)
 library(plotly)
 
+source("UItabDataset.R")
+source("UItabVisualisation.R")
+
 ui <- fluidPage(
   theme = shinytheme("cosmo"),
   navbarPage("Visualize", id = "tabs",
-    tabPanel("Dataset", 
-             icon = icon("table"), 
-             div(style = "margin-top: 30px;",
-               fluidRow(
-                 column(4, fileInput('file1', 'Select your file')),
-                 column(4, fileInput('filePlusMin', 'Select +/- file')),
-                 div(style = "margin-top: 25px;",
-                  column(4, actionButton("upload", "Upload"))
-                 )
-               ),
-               
-               div(style = "margin-top: 40px;",
-                 fluidRow(
-                   column(4, uiOutput(outputId = "Cmolecule1")),
-                   div(style = "margin-top: 20px;",
-                    column(4, uiOutput(outputId = "Cadd1"))
-                   )
-                  ),
-                 fluidRow(
-                   column(4, uiOutput(outputId = "Cmolecule2")),
-                   div(style = "margin-top: 20px;", 
-                    column(2, uiOutput(outputId = "Cadd2"))
-                   )
-                 ),
-                 fluidRow(
-                   column(4, uiOutput(outputId = "Cmolecule3")),
-                   div(style = "margin-top: 20px;",
-                    column(2, uiOutput(outputId = "Cadd3"))
-                   )
-                 ),
-                 fluidRow(
-                   column(4, uiOutput(outputId = "otherGraphs"))
-                 ),
-                 fluidRow(
-                   column(4, uiOutput(outputId = "plotB"))
-                 )
-               )
-             )
-    ),
-    
-    tabPanel("Visualisation", icon = icon("bar-chart-o"),
-             
-             tabsetPanel(id = "visPanel",type = "tabs",
-                         
-               tabPanel("Graphic",
-                        div(style = "margin-top: 5%; ",
-                            fluidRow(
-                              column(4, plotlyOutput(outputId = "Graphic1", width = "450px", height = "350px")),
-                              column(4, plotlyOutput(outputId = "Graphic2", width = "450px", height = "350px")),
-                              column(4, plotlyOutput(outputId = "Graphic3", width = "450px", height = "350px"))
-                            ),
-                            div(style = "margin-top: 2%; ", 
-                              fluidRow(
-                                column(4, plotlyOutput(outputId = "Graphic4", width = "450px", height = "350px")),
-                                column(4, plotlyOutput(outputId = "Graphic5", width = "450px", height = "350px")),
-                                column(4, plotlyOutput(outputId = "Graphic6", width = "450px", height = "350px"))
-                              )
-                            )
-                          )
-                        ),
-               
-               tabPanel("Heatmap",
-                        plotlyOutput(outputId = "heatmap")
-                        
-                        
-               )
-             )
-             )
+    tabDataset,
+    tabVisualisation
   )
 )
 
 
 server <- function(input, output, session) {
-
+  # Als de upload button is geactiveerd, wordt de data genormaliseerd en komen de opties
+  # voor de gebruiker in de webapplicatie. 
   observeEvent(input$upload, {
     if(!is.null(input$file1) && !is.null(input$filePlusMin)){
       data <- read.xlsx(input$file1$datapath, sheetIndex = 1, stringsAsFactors=FALSE)
@@ -115,7 +53,6 @@ server <- function(input, output, session) {
       })
       output$otherGraphs <- renderUI({
         checkboxGroupInput(inputId = "specGraphs",label = "Other graphs", choices = c("UDP-glc / UDP-glcA", "UDP-glc / UDP-xylose","UDP-glcA / UDP-xylose"))
-        # selectInput(inputId = "specGraphs", label = "Other graphs", choices = c("UDP-glc / UDP-glcA", "UDP-glc / UDP-xylose","UDP-glcA / UDP-xylose"), multiple = TRUE)
       })
       output$plotB <- renderUI({
         actionButton(inputId = "plot", label = "Plot")
@@ -123,6 +60,8 @@ server <- function(input, output, session) {
     }
     
   })
+  
+  # Hier worden er selectinputs toegevoegd wanneer er op de + button wordt geklikt
   observeEvent(input$Add1, {
     output$Cmolecule2 <- renderUI({
       selectInput(inputId = "molecule2", label = "Select molecule", choices = c(ch))
@@ -138,8 +77,10 @@ server <- function(input, output, session) {
       })
     })
   })
-  
 
+  # Wanneer er op de plot button wordt geklikt, worden de coordinaten bepaald van 
+  # de gekozen moleculen in de 3D plot en worden de 3D plots weergeven van de moleculen 
+  # die gekozen zijn door de gebruiker.
   observeEvent(input$plot, {
       if(!is.null(input$molecule1)){
         source("visualize.R")
@@ -192,6 +133,8 @@ server <- function(input, output, session) {
     })
   })
   
+  # Dit wordt geactiveerd wanneer er een van de "other graphs" wordt geselecteerd. De
+  # coordinaten worden bepaald en mol1 wordt gedeeld door mol 2.
   observeEvent(input$specGraphs, {
     choices <- input$specGraphs
     for(item in 1:length(choices)){
