@@ -1,7 +1,6 @@
-getTotals <- function(data, dataplusmin){
-  write.csv(data, "data.csv")
-  write.csv(dataplusmin, "plusmin.csv")
-  
+# Het toevoegen van twee kolommen: het totale van een sample aan responses 
+# en de totale area van een sample. Hiermee kan later genormaliseerd worden
+getTotals <- function(data){
   totalResponses <- c("sum resp")
   totalArea <- c("sum area")
   
@@ -35,6 +34,10 @@ getTotals <- function(data, dataplusmin){
   return(data)
 }
 
+# Het normaliseren van de responses aan de hand van de totale response. 
+# De response van een molecuul wordt gedeeld door de totale response van
+# de sample en dat maal 100. Alleen de genormaliseerde responses worden 
+# gereturnt. 
 Normalization <- function(data){
   index_SumResp <- which(data == "sum resp", arr.ind = TRUE)
   column_SumResp <- index_SumResp[1,2]
@@ -64,6 +67,5 @@ Normalization <- function(data){
       }
     }
   }
-  
   return(norm_data)
 }

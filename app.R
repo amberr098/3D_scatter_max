@@ -21,17 +21,25 @@ ui <- fluidPage(
                div(style = "margin-top: 40px;",
                  fluidRow(
                    column(4, uiOutput(outputId = "Cmolecule1")),
-                   column(2, uiOutput(outputId = "Cadd1"))
-                 ),
+                   div(style = "margin-top: 20px;",
+                    column(4, uiOutput(outputId = "Cadd1"))
+                   )
+                  ),
                  fluidRow(
                    column(4, uiOutput(outputId = "Cmolecule2")),
-                   column(2, uiOutput(outputId = "Cadd2"))
+                   div(style = "margin-top: 20px;", 
+                    column(2, uiOutput(outputId = "Cadd2"))
+                   )
                  ),
                  fluidRow(
                    column(4, uiOutput(outputId = "Cmolecule3")),
-                   column(2, uiOutput(outputId = "Cadd3"))
+                   div(style = "margin-top: 20px;",
+                    column(2, uiOutput(outputId = "Cadd3"))
+                   )
                  ),
-                 
+                 fluidRow(
+                   column(4, uiOutput(outputId = "otherGraphs"))
+                 ),
                  fluidRow(
                    column(4, uiOutput(outputId = "plotB"))
                  )
@@ -44,11 +52,18 @@ ui <- fluidPage(
              tabsetPanel(id = "visPanel",type = "tabs",
                          
                tabPanel("Graphic",
-                        div(style = "margin-top: 11%; ",
+                        div(style = "margin-top: 5%; ",
                             fluidRow(
                               column(4, plotlyOutput(outputId = "Graphic1", width = "450px", height = "350px")),
                               column(4, plotlyOutput(outputId = "Graphic2", width = "450px", height = "350px")),
                               column(4, plotlyOutput(outputId = "Graphic3", width = "450px", height = "350px"))
+                            ),
+                            div(style = "margin-top: 2%; ", 
+                              fluidRow(
+                                column(4, plotlyOutput(outputId = "Graphic4", width = "450px", height = "350px")),
+                                column(4, plotlyOutput(outputId = "Graphic5", width = "450px", height = "350px")),
+                                column(4, plotlyOutput(outputId = "Graphic6", width = "450px", height = "350px"))
+                              )
                             )
                           )
                         ),
@@ -71,7 +86,7 @@ server <- function(input, output, session) {
       data <- read.xlsx(input$file1$datapath, sheetIndex = 1, stringsAsFactors=FALSE)
       dataplusmin <<- read.xlsx(input$filePlusMin$datapath, sheetIndex =1, stringsAsFactors=FALSE)
       source("normalize.R")
-      TotalData <- getTotals(data, dataplusmin)
+      TotalData <- getTotals(data)
       norm_data <<- Normalization(TotalData)
       
       molChoose <- c()
@@ -98,7 +113,10 @@ server <- function(input, output, session) {
       output$Cadd1 <- renderUI({
         actionButton(inputId = "Add1", label = NULL, icon = icon("plus"))
       })
-      
+      output$otherGraphs <- renderUI({
+        checkboxGroupInput(inputId = "specGraphs",label = "Other graphs", choices = c("UDP-glc / UDP-glcA", "UDP-glc / UDP-xylose","UDP-glcA / UDP-xylose"))
+        # selectInput(inputId = "specGraphs", label = "Other graphs", choices = c("UDP-glc / UDP-glcA", "UDP-glc / UDP-xylose","UDP-glcA / UDP-xylose"), multiple = TRUE)
+      })
       output$plotB <- renderUI({
         actionButton(inputId = "plot", label = "Plot")
       })
@@ -127,7 +145,8 @@ server <- function(input, output, session) {
         source("visualize.R")
         values_good1 <- getSelectedMol(input$molecule1, norm_data)
         alignDataFrame1 <- getPlotData(values_good1, dataplusmin)
-        p1 <- setPlot(alignDataFrame1, input$molecule1)
+        average_dataframe1 <- getAverageDuplicates(alignDataFrame1)
+        p1 <- setPlot(average_dataframe1, input$molecule1)
 
         output$Graphic1 <- renderPlotly({
           p1
@@ -138,7 +157,8 @@ server <- function(input, output, session) {
         source("visualize.R")
         values_good2 <- getSelectedMol(input$molecule2, norm_data)
         alignDataFrame2 <- getPlotData(values_good2, dataplusmin)
-        p2 <- setPlot(alignDataFrame2, input$molecule2)
+        average_dataframe2 <- getAverageDuplicates(alignDataFrame2)
+        p2 <- setPlot(average_dataframe2, input$molecule2)
 
         output$Graphic2 <- renderPlotly({
           p2
@@ -149,7 +169,8 @@ server <- function(input, output, session) {
         source("visualize.R")
         values_good3 <- getSelectedMol(input$molecule3, norm_data)
         alignDataFrame3 <- getPlotData(values_good3, dataplusmin)
-        p3 <- setPlot(alignDataFrame3, input$molecule3)
+        average_dataframe3 <- getAverageDuplicates(alignDataFrame3)
+        p3 <- setPlot(average_dataframe3, input$molecule3)
 
         output$Graphic3 <- renderPlotly({
           p3
@@ -162,14 +183,56 @@ server <- function(input, output, session) {
     })
     
     updateTabsetPanel(session, "tabs", selected = "Visualisation")
+    
+    source("heatmap.R")
+    hm <- setHeatmap(norm_data)
+    
+    output$heatmap <- renderPlotly({
+      hm
+    })
   })
   
-
-  source("heatmap.R")
-  hm <- setHeatmap(norm_data)
+  observeEvent(input$specGraphs, {
+    choices <- input$specGraphs
+    for(item in 1:length(choices)){
+      inp <- choices[item]
+      if(isTRUE(inp == "UDP-glc / UDP-glcA")){
+        source("OtherGraphs.R")
+        coordinates_duplicated <- getCoordinates(norm_data, "UDP.Glc.Results","UDP.GlcA.Results", dataplusmin)
+        noDupl <- getAveragesDuplicates(coordinates_duplicated)
+        coordinates_df <- getAllDuplicates(noDupl)
+        p4 <- setPlot(coordinates_df, "UDP-glc / UDP-glcA")
+        
+        output$Graphic4 <- renderPlotly({
+          p4
+        })
+      } 
+      
+      if(isTRUE(inp ==  "UDP-glc / UDP-xylose")){
+        source("OtherGraphs.R")
+        coordinates_duplicated <- getCoordinates(norm_data, "UDP.Glc.Results","UDP.xylose.Results", dataplusmin)
+        noDupl <- getAveragesDuplicates(coordinates_duplicated)
+        coordinates_df <- getAllDuplicates(noDupl)
+        p5 <- setPlot(coordinates_df, "UDP-glc / UDP-xylose")
+        
+        output$Graphic5 <- renderPlotly({
+          p5
+        })
+      }
+      
+      if(isTRUE(inp ==  "UDP-glcA / UDP-xylose")){
+        source("OtherGraphs.R")
+        coordinates_duplicated <- getCoordinates(norm_data, "UDP.GlcA.Results","UDP.xylose.Results", dataplusmin)
+        noDupl <- getAveragesDuplicates(coordinates_duplicated)
+        coordinates_df <- getAllDuplicates(noDupl)
+        p6 <- setPlot(coordinates_df, "UDP-glcA / UDP-xylose")
+        
+        output$Graphic6 <- renderPlotly({
+          p6
+        })
+      }
+    }
     
-  output$heatmap <- renderPlotly({
-    hm
   })
   
   }

@@ -1,6 +1,10 @@
 library(plotly)
 
+# Uit alle genormaliseerde waarde de goede kolom pakken aan de hand van de keuze
+# van de gebruiker. values_good returnt de kolom van het gekozen molecuul met de 
+# genormaliseerde waardes. 
 getSelectedMol <- function(mol, norm_data){
+
   find <- paste0(mol, "Results")
   getMol <- gsub(" ", ".", find)
   
@@ -20,6 +24,10 @@ getSelectedMol <- function(mol, norm_data){
   return(values_good)
 }
 
+# Aan de hand van de plus en min data wordt er een tabel gecreeerd met de coordinaten
+# van de punten met daarnaast de waarde van het punt. De tabel bestaat uit:
+# Glucose, Galactose, Glutamine, Values. Hierbij zijn Glucose, Galactose en Glutamine
+# de coordinaten voor het punt in de 3D plot.
 getPlotData <- function(values_good, dataPlusMin){
   alignDataFrame <- data.frame(matrix(ncol=4, nrow = length(values_good)))
   
@@ -68,9 +76,36 @@ getPlotData <- function(values_good, dataPlusMin){
   return(alignDataFrame)
 }
 
-setPlot <- function(alignDataFrame, mainTitle){
-  p <- plot_ly(data = alignDataFrame, x=alignDataFrame$Glucose, y=alignDataFrame$Galactose, z=alignDataFrame$Glutamine,
-               mode = "markers", type = 'scatter3d', marker = list(color = alignDataFrame$Values, colorscale = "RdYlGn", showscale = TRUE)) %>%
+# Van de duplicates een gemiddelde pakken van de values. 
+getAverageDuplicates<-function(alignDataFrame){
+  temp_matrix <- matrix(data = NA, nrow = nrow(alignDataFrame)/2, ncol = ncol(alignDataFrame))
+  count <- 0 
+  nextRow <- 1
+  for(row in 1:nrow(alignDataFrame)){
+    nextRow <- nextRow + 1
+    
+    if( (isTRUE(alignDataFrame[row,1] == alignDataFrame[nextRow,1])) && 
+        (isTRUE(alignDataFrame[row,2] == alignDataFrame[nextRow,2])) && 
+        (isTRUE(alignDataFrame[row,3] == alignDataFrame[nextRow,3])) ){
+          count <- count +1 
+          average <- (as.numeric(alignDataFrame[row,4]) + as.numeric(alignDataFrame[nextRow,4]))/2
+          
+          temp_matrix[count,1] <- alignDataFrame[row,1]
+          temp_matrix[count,2] <- alignDataFrame[row,2]
+          temp_matrix[count,3] <- alignDataFrame[row,3]
+          temp_matrix[count,4] <- average
+    }
+  }
+  colnames(temp_matrix) <- c("Glucose", "Galactose", "Glutamine", "Values")
+  average_dataframe <- as.data.frame(temp_matrix)
+  return(average_dataframe)
+}
+
+# Aan de hand van de tabel waarin Glucose, Galactose, Glutamine en values staan wordt
+# er een plot gegenereerd. 
+setPlot <- function(average_dataframe, mainTitle){
+  p <- plot_ly(data = average_dataframe, x=average_dataframe$Glucose, y=average_dataframe$Galactose, z=average_dataframe$Glutamine,
+               mode = "markers", type = 'scatter3d', marker = list(color = average_dataframe$Values, colorscale = "RdYlGn", showscale = TRUE)) %>%
     layout(scene = list(xaxis = list(title = 'Glucose'),
                         yaxis = list(title = 'Galactose'),
                         zaxis = list(title = 'Glutamine')),
